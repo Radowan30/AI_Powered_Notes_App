@@ -746,6 +746,408 @@ iii) choose blade, then choose the appropriate operations. In the test choosing 
 Then you will see that the routes dont work, because the routes have been overwritten
 
 
+** Ran into an issue after doing composer require laravel/breeze --dev and php artisan breeze:install, where there was a problem with long path paths. I followed th following steps to fix it:
+
+1. Edit the Registry:
+
+Press Win + R, type regedit, and hit Enter.
+Navigate to:
+HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\FileSystem.
+Find or create a DWORD named LongPathsEnabled.
+Set its value to 1.
+Restart your machine.
+
+
+2. Clean the Composer Cache
+Sometimes corrupted or outdated cache files can cause installation problems. Run the following command to clean the Composer cache:
+
+composer clear-cache
+
+3. (First do git init if you haven't done so) then Update Git Configuration
+Git can encounter issues with long paths. Update Git to handle long paths explicitly:
+
+git config --global core.longpaths true
+
+
+#Now, when we register, we are automatically verified. 
+
+#If we want email verification (with a verification email sent), we need to go to the user.php file and make the User class implement the MustVerifyEmail class. The code looks like this in the User.php file:
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+
+class User extends Authenticatable implements MustVerifyEmail
+{
+    /** @use HasFactory<\Database\Factories\UserFactory> */
+    use HasFactory, Notifiable;
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+    ];
+
+    /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var array<int, string>
+     */
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+        ];
+    }
+}
+
+
+*The verification Email is not actually sent to the email, it is stored locally under storage->logs->laravel.log for local development, because in the .env file, the MAIL_MAILER is set to log and not a mailing service. Inside of it you'll have the verification email as well as the link to go log in
+
+
+#Now lets recover web.php. The current code in it is:
+
+<?php
+
+use App\Http\Controllers\ProfileController;
+use Illuminate\Support\Facades\Route;
+
+Route::get('/', function () {
+    return view('welcome');
+});
+
+Route::get('/dashboard', function () {
+    return view('dashboard');
+})->middleware(['auth', 'verified'])->name('dashboard'); //here, there are two middlewares- the auth middleware checks if the user is authenticated and the verified middleware checks if the user is verified. If one of them is not satisfied, then we cant access the dashboard page.
+
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
+require __DIR__.'/auth.php';
+
+
+
+*the middleware is a class that sits betn the user's request and the controller. The middleware either blocks the request or returns a modified response.
+
+*What is Middleware in Laravel?
+Middleware in Laravel acts like a checkpoint or gatekeeper for HTTP requests. It allows you to filter and control access to parts of your application by performing tasks before or after a request is handled by your application.
+
+*How Middleware Works Internally:
+Middleware acts on the request-response cycle:
+
+Request Enters the Application:
+
+Middleware runs before the request reaches your controller or route.
+It performs checks or modifications (e.g., verify authentication, log requests).
+Request Proceeds to the Route/Controller:
+
+If all middleware checks pass, the request is processed by the route or controller.
+Response is Sent Back:
+
+Middleware can also run after the response is generated to perform tasks like modifying headers or logging.
+
+
+*Summary:
+Middleware is like a security checkpoint that filters and controls requests as they travel into and out of your application. It’s a powerful way to handle common tasks efficiently while keeping your code organized and modular.
+
+
+
+#Clink on the login link in te log file first
+
+#Then change the code so that the code in Web.php should look like this:
+<?php
+
+use App\Http\Controllers\NoteController;
+use App\Http\Controllers\ProfileController;
+use Illuminate\Support\Facades\Route;
+
+// Route::get('/', function () {
+//     return view('welcome');
+// });
+
+// Route::get('/dashboard', function () {
+//     return view('dashboard');
+// })->middleware(['auth', 'verified'])->name('dashboard'); //here, there are two middlewares- the auth middleware checks if the user is authenticated and the verified middleware checks if the user is verified. If one of them is not satisfied, then we cant access the dashboard page.
+
+Route::middleware(['auth', 'verified'])->group(function () { //here, there are two middlewares- the auth middleware checks if the user is authenticated and the verified middleware checks if the user is verified. If one of them is not satisfied, then we cant access the note routes that are specified below / is specified by the single line at the bottom
+
+
+    // Route::get('/note', [NoteController::class, 'index'])->name('note.index');
+// Route::get('note/create', [NoteController::class, 'create'])->name('note.create');
+// Route::post('/note', [NoteController::class, 'store'])->name('note.store');
+// Route::get('note/{id}', [NoteController::class, 'show'])->name('note.show');
+// Route::get('note/{id}/edit', [NoteController::class, 'edit'])->name('note.edit');
+// Route::put('/note/{id}', [NoteController::class, 'update'])->name('note.update');
+// Route::delete('/note/{id}', [NoteController::class, 'destroy'])->name('note.destroy');
+
+    Route::resource('note', NoteController::class);
+});
+
+Route::middleware('auth')->group(function () {  //the middle waregroup, which has the routes. The user needs to be authenticated in order to access the profile page specified below
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
+require __DIR__ . '/auth.php';
+
+
+
+#Now we have to restore the styles in the app.css file. Just copy paste the code from the file that was backed up
+
+#If it doesnt seem to be showing the styles, restart the vite server
+
+#Now we will chage the layout of our notes page to be similar to the breeze dashboard layout (which  is in resources->views).
+
+-the dashboard uses the x-app-layout, whcih is in views->layouts->app.blade.php
+
+-what we can do is, in index.blade.php (the file that shows all our notes), and change the <x-layout> to <x-app-layout>
+-this will give it the same layout as the breeze dashboard
+- and we do the same thing for all the note view files.
+
+-we will first see a route[dashboard] not found error, as we deleted the route
+
+-so what we can do in the web.php file is to set a route that redirects from the '/' to '/note' and give it the name 'dashboard'. So now, whenever the code tries to redirect to the dashboard, itll redirecto to '/' instead, which inturn redirects to '/note'
+
+-so now, even though we are redirecting twice, it is a quick way to have the dashboard as our notes app
+
+-at first, you'll see that any user sees all the notes in the database. This is because the notes route is not filtered according to the currently authenticated user.
+
+-so we have to implement this login in the index() function def of the NoteController
+
+the code in the Notecontroller should look like this:
+
+
+public function index()
+    {
+        $notes = Note::query()
+            ->where('user_id', request()->user()->id)  //only get the notes rows that have the user_id column matching the currently authenticated user
+            ->orderBy('created_at', 'desc')
+            ->paginate(); //this query retrieves all notes, if we use the get() method at the end, ordered by creation date in descending order. We change the get() method to paginate()
+        // dd($notes); //dd is a debugging tool that allows you to print the value of a variable to the console. It is like console log in JS.
+        return view('note.index', ['notes' => $notes]); //"note.index" means the index.blade file in the note folder. The second argument of the view function, which is the [] in which there are the key value pair array allows us to pass a variable to the view. The notes in quotes in the array is the variable that is in the blade file, this variable is created in the note.index file. Instead of array we can also use compact function
+    }
+
+
+ public function store(Request $request)
+    {
+        $data = $request->validate(['note' => ['required', 'string']]); //validates if the note data in the request is a required and string or not, and then it returns something which gets stored in the data
+
+        $data['user_id'] = $request->user()->id; //We assign the user_id in the request to 1, so that the note is created with this user id. Later will dynamically assign user id from the currently authenticated user, by using the $request or using $request->user()->id
+        $note = Note::create($data); //make a note modal with the verified request data. The new note should be automatically added to the database here.
+        //Here we are passing an associative array ($data) to the create() metho of the Note modal. But we need to specifiy for the Note modal which fields of the associative array it should take (and also which fields of the database table it should fill). We do that in the Note.php file under Models
+
+        //after you create a new note, we should be directed to the note/show.blade.php file, and we should also pass a session message
+        return to_route('note.show', $note)->with('message', 'Note was created');
+
+    }
+
+-there is a problem where if the note id is set to another value in the browser link, then that not is visible to everyone, so to prevent that, we restrict that in the show() function using an if statement:
+
+public function show(Note $note)
+    {
+        if($note->user_id !== request()->user()->id){
+            abort(403);
+        }
+        return view('note.show', ['note' => $note]);
+    }
+
+same thing has to be done in the edit, update, delete functions:
+
+public function edit(Note $note)
+    {
+        if ($note->user_id !== request()->user()->id) {
+            abort(403);
+        }
+        return view('note.edit', ['note' => $note]);
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, Note $note)
+    {
+        if ($note->user_id !== request()->user()->id) {
+            abort(403);
+        }
+
+        $data = $request->validate(['note' => ['required', 'string']]); //validates if the note data in the request is a required and string or not, and then it returns something which gets stored in the data
+
+        //no setting user_id as in store, as we dont change the user_id/set the user_id ourselves/it automatically knows
+        //instead of making a new note and passing the request data to it like this $note = Note::create($data);  we will pass the data to the existing note we get from the argument
+        $note->update($data);
+
+        //after you create a new note, we should be directed to the note/show.blade.php file, and we should also pass a session message
+        return to_route('note.show', $note)->with('message', 'Note was updated');
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(Note $note)
+    {
+        if ($note->user_id !== request()->user()->id) {
+            abort(403);
+        }
+        $note->delete();
+        return to_route('note.index')->with('message', 'Note was deleted');
+    }
+}
+
+#Now for final touches. 
+
+-we will change the 'dashboard' tab text to notes and also add some css styling
+
+-to do this we will go to the navigation.blade.php file (in views->layouts) to get the 'dashboard' tab, and we no longer need the layout.blade.php file (we can delete it)
+
+
+changes these codes:
+
+<!-- Navigation Links -->
+                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                    <x-nav-link :href="route('note.index')" :active="request()->routeIs('note.index')">
+                        {{ __('Notes') }}
+                    </x-nav-link>
+                </div>
+            </div>
+
+<!-- Responsive Navigation Menu -->
+    <div :class="{ 'block': open, 'hidden': !open }" class="hidden sm:hidden">
+        <div class="pt-2 pb-3 space-y-1">
+            <x-responsive-nav-link :href="route('note.index')" :active="request()->routeIs('note.index')">
+                {{ __('Notes') }}
+            </x-responsive-nav-link>
+        </div>
+
+
+
+-added some padding to the index file:
+
+<x-app-layout>
+    <div class="note-container py-12">
+        {{-- For each links, we can manually set the link to each page. But this is not the perfect solution in laravel. We can generate the routes based on the route names  --}}
+        <a href="{{ route('note.create') }}" class="new-note-btn">
+            New Note
+        </a>
+
+        <div class="notes">
+            {{-- now we will render every notes using a for each directive. There are many directives in laravel that can be accessed with the @ symbol. Below, each element in hte $notes array is assigned to the $note variable.
+            
+            The Str::words() method allows us to set the number of words we want to use
+            --}}
+            @foreach ($notes as $note)
+                <div class="note">
+                    <div class="note-body">
+                        {{ Str::words($note->note, 30) }}
+                    </div>
+                    <div class="note-buttons">
+                        {{-- Below in href="{{route('note.show', $note)}}", we actually need to pass the id of the note to have the right note shown and it is also how the route is setup in the web.php file. So we can either give $note->id as the second argument, or just $note in which case it'll just use the primary key (the id) --}}
+                        <a href="{{ route('note.show', $note) }}" class="note-edit-button">View</a>
+                        <a href="{{ route('note.edit', $note) }}" class="note-edit-button">Edit</a>
+                        {{-- When we want to delete something, a delete request has to be sent to the delete route. So instead having a button, it needs to be form, that submits to the note.destry route using the POST method (as we are modifying something), but then we also have to provid the @csrf and the @method('DELETE') directives --}}
+                        <form action="{{ route('note.destroy', $note) }}" method="POST">
+                            @csrf
+                            @method('DELETE')
+                            <button class="note-delete-button">Delete</button>
+                        </form>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+        {{ $notes->links() }}
+    </div>
+</x-app-layout>
+
+
+
+-changed the heading of the show page a little bit:
+
+<x-app-layout>
+    <div class="note-container single-note">
+        <div class="note-header">
+            <h1 class="text-3xl py-4">Note: {{ $note->created_at }}</h1>
+            <div class="note-buttons">
+                <a href="{{ route('note.edit', $note) }}" class="note-edit-button">Edit</a>
+                {{-- When we want to delete something, a delete request has to be sent to the delete route. So instead having a button, it needs to be form, that submits to the note.destry route using the POST method (as we are modifying something), but then we also have to provid the @csrf and the @method('DELETE') directives --}}
+                <form action="{{ route('note.destroy', $note) }}" method="POST">
+                    @csrf
+                    @method('DELETE')
+                    <button class="note-delete-button">Delete</button>
+                </form>
+            </div>
+        </div>
+        <div class="note">
+            <div class="note-body">
+                {{ $note->note }}
+            </div>
+        </div>
+    </div>
+</x-app-layout>
+
+
+-also changed the heading a bit for the edit page:
+
+<x-app-layout>
+    <div class="note-container single-note">
+        <h1 class="text-3xl py-4">Edit your note</h1>
+        <form action="{{ route('note.update', $note) }}" method="POST" class="note">
+            @csrf
+            @method('PUT')
+            <textarea name="note" rows="10" class="note-body" placeholder="Enter your note here">{{ $note->note }}</textarea>
+            <div class="note-buttons">
+                <a href="{{ route('note.index') }}" class="note-cancel-button">Cancel</a>
+                <button class="note-submit">Submit</button>
+            </div>
+        </form>
+    </div>
+</x-app-layout>
+
+
+-now giving some padding to the pagination. Go to the index.blade page and then make a div and then put the pagination inside there:
+
+
+#Now, we can customize the 403 Forbidden page that the user sees when they try to see another note
+
+-for this we have to create a new folder called "errors" under views, create in it the file 403.blade.php
+Then the code can be something like this in that file:
+
+<x-app-layout>
+    <h1>Forbidden</h1>
+</x-app-layout>
+
+
+
+
+
+
+
+
+
+
 
 
 

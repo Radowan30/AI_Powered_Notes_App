@@ -1,5 +1,5 @@
-<x-layout>
-    <div class="note-container">
+<x-app-layout>
+    <div class="note-container py-12">
         {{-- For each links, we can manually set the link to each page. But this is not the perfect solution in laravel. We can generate the routes based on the route names  --}}
         <a href="{{ route('note.create') }}" class="new-note-btn">
             New Note
@@ -29,6 +29,9 @@
                 </div>
             @endforeach
         </div>
-        {{ $notes->links() }}
+
+        <div class="p=6">
+            {{ $notes->links() }}
+        </div>
     </div>
-</x-layout>
+</x-app-layout>
