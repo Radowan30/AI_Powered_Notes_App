@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('notes', function (Blueprint $table) {
             $table->id();
+            $table->text('note_summary'); //a column to store the note summary
             $table->longText('note'); //a column to store the note content
             $table->foreignId('user_id')->constrained('users'); //a foreign key to link notes to users
             $table->timestamps();

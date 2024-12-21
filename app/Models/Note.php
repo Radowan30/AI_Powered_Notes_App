@@ -9,5 +9,5 @@ class Note extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['note', 'user_id'];  //when ever a request is passed to the create() method of note, it knows now to take the 'note' and 'user_id' fields from it.
+    protected $fillable = ['note_summary','note', 'user_id'];  //when ever a request is passed to the create() method of note, it knows now to take the 'note_summary', 'note' and 'user_id' fields from it.
 }
