@@ -1,4 +1,3 @@
-```markdown
 # Getting Started with the AI-Powered Notes App  
 
 Follow these steps to set up and run the Laravel 11 project locally on your computer.  
