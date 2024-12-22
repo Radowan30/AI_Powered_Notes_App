@@ -15,9 +15,6 @@
                     <div id="note-{{ $note->id }}" class="note-body">
                         <b>AI Summary</b>: {{ Str::words($note->note_summary) }}
                     </div>
-                    {{-- <script>
-                        document.getElementById("note-{{ $note->id }}").innerHTML = "response"
-                    </script> --}}
                     <div class="note-buttons">
                         {{-- Below in href="{{route('note.show', $note)}}", we actually need to pass the id of the note to have the right note shown and it is also how the route is setup in the web.php file. So we can either give $note->id as the second argument, or just $note in which case it'll just use the primary key (the id) --}}
                         <a href="{{ route('note.show', $note) }}" class="note-edit-button">View</a>
@@ -37,8 +34,4 @@
             {{ $notes->links() }}
         </div>
     </div>
-
-    <script>
-        var note = $note - > note
-    </script>
 </x-app-layout>
